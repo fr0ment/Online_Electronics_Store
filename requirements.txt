@@ -1,0 +1,9 @@
+fastapi
+sqlalchemy
+pydantic[email]
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+pyjwt
+uvicorn
+alembic
+python-jose[cryptography]
