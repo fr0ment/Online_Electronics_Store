@@ -12,6 +12,7 @@ import models
 import schemas
 import crud
 from fastapi.security import OAuth2PasswordRequestForm
+
 # Настройка логирования
 logging.basicConfig(filename='app.log', level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -61,7 +62,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise HTTPException(status_code=401, detail="Invalid token")
 
 # Аутентификация
-@app.post("/api/auth/login")
+@app.post("/api/auth/login", tags=["Users"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     logging.info(f"Получен запрос на вход с данными: username={form_data.username}, password={form_data.password}")
     db_user = crud.get_user_by_email(db, form_data.username)
@@ -74,24 +75,27 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     logging.info(f"Пользователь {db_user.email} успешно вошел")
     return {"access_token": access_token, "token_type": "bearer"}
 
-# Эндпоинты для товаров 
-@app.get("/api/products", response_model=List[schemas.Product])
+# Эндпоинты для товаров
+@app.get("/api/products", response_model=List[schemas.Product], tags=["Products"])
 async def get_products(
     page: int = 1,
     limit: int = 10,
     category: Optional[str] = None,
     minPrice: Optional[float] = None,
+    maxPrice: Optional[float] = None,
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     if page < 1 or limit < 1 or limit > 100:
         logging.warning(f"Invalid pagination params: page={page}, limit={limit}")
         raise HTTPException(status_code=400, detail="Invalid pagination parameters")
     
-    products = crud.get_products(db, page=page, limit=limit, category=category, min_price=minPrice)
-    logging.info(f"Fetched products: page={page}, limit={limit}, category={category}, minPrice={minPrice}")
+    products = crud.get_products(db, page=page, limit=limit, category=category, min_price=minPrice, max_price=maxPrice, sort_by=sort_by, sort_order=sort_order)
+    logging.info(f"Fetched products: page={page}, limit={limit}, category={category}, minPrice={minPrice}, maxPrice={maxPrice}, sort_by={sort_by}, sort_order={sort_order}")
     return products
 
-@app.get("/api/products/{id}", response_model=schemas.Product)
+@app.get("/api/products/{id}", response_model=schemas.Product, tags=["Products"])
 async def get_product(id: int, db: Session = Depends(get_db)):
     product = crud.get_product(db, id)
     if product is None:
@@ -100,7 +104,7 @@ async def get_product(id: int, db: Session = Depends(get_db)):
     logging.info(f"Fetched product {id}")
     return product
 
-@app.post("/api/products", response_model=schemas.Product)
+@app.post("/api/products", response_model=schemas.Product, tags=["Products"])
 async def create_product(
     product: schemas.ProductCreate,
     db: Session = Depends(get_db),
@@ -114,7 +118,7 @@ async def create_product(
     logging.info(f"Product {new_product.id} created by {current_user.email}")
     return new_product
 
-@app.put("/api/products/{id}", response_model=schemas.Product)
+@app.put("/api/products/{id}", response_model=schemas.Product, tags=["Products"])
 async def update_product(
     id: int,
     product: schemas.ProductCreate,
@@ -132,7 +136,7 @@ async def update_product(
     logging.info(f"Product {id} updated by {current_user.email}")
     return updated_product
 
-@app.delete("/api/products/{id}")
+@app.delete("/api/products/{id}", tags=["Products"])
 async def delete_product(
     id: int,
     db: Session = Depends(get_db),
@@ -149,7 +153,7 @@ async def delete_product(
     return {"message": "Product deleted"}
 
 # Эндпоинты для заказов
-@app.get("/api/orders", response_model=List[schemas.Order])
+@app.get("/api/orders", response_model=List[schemas.Order], tags=["Orders"])
 async def get_orders(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -161,7 +165,7 @@ async def get_orders(
     logging.info(f"Fetched orders for {current_user.email}")
     return orders
 
-@app.get("/api/orders/{id}", response_model=schemas.Order)
+@app.get("/api/orders/{id}", response_model=schemas.Order, tags=["Orders"])
 async def get_order(
     id: int,
     db: Session = Depends(get_db),
@@ -177,7 +181,7 @@ async def get_order(
     logging.info(f"Fetched order {id} for {current_user.email}")
     return order
 
-@app.post("/api/orders", response_model=schemas.Order)
+@app.post("/api/orders", response_model=schemas.Order, tags=["Orders"])
 async def create_order(
     order: schemas.OrderCreate,
     db: Session = Depends(get_db),
@@ -191,7 +195,7 @@ async def create_order(
     logging.info(f"Order {new_order.id} created by {current_user.email}")
     return new_order
 
-@app.put("/api/orders/{id}", response_model=schemas.Order)
+@app.put("/api/orders/{id}", response_model=schemas.Order, tags=["Orders"])
 async def update_order(
     id: int,
     order: schemas.OrderUpdate,
@@ -209,7 +213,7 @@ async def update_order(
     logging.info(f"Order {id} updated by {current_user.email}")
     return updated_order
 
-@app.delete("/api/orders/{id}")
+@app.delete("/api/orders/{id}", tags=["Orders"])
 async def delete_order(
     id: int,
     db: Session = Depends(get_db),
@@ -225,8 +229,8 @@ async def delete_order(
     logging.info(f"Order {id} deleted by {current_user.email}")
     return {"message": "Order deleted"}
 
-# Эндпоинты для отзывов 
-@app.get("/api/reviews", response_model=List[schemas.Review])
+# Эндпоинты для отзывов
+@app.get("/api/reviews", response_model=List[schemas.Review], tags=["Reviews"])
 async def get_reviews(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -238,7 +242,7 @@ async def get_reviews(
     logging.info(f"Fetched reviews for {current_user.email}")
     return reviews
 
-@app.get("/api/reviews/{id}", response_model=schemas.Review)
+@app.get("/api/reviews/{id}", response_model=schemas.Review, tags=["Reviews"])
 async def get_review(
     id: int,
     db: Session = Depends(get_db),
@@ -254,7 +258,7 @@ async def get_review(
     logging.info(f"Fetched review {id} for {current_user.email}")
     return review
 
-@app.post("/api/reviews", response_model=schemas.Review)
+@app.post("/api/reviews", response_model=schemas.Review, tags=["Reviews"])
 async def create_review(
     review: schemas.ReviewCreate,
     db: Session = Depends(get_db),
@@ -268,7 +272,7 @@ async def create_review(
     logging.info(f"Review {new_review.id} created by {current_user.email}")
     return new_review
 
-@app.put("/api/reviews/{id}", response_model=schemas.Review)
+@app.put("/api/reviews/{id}", response_model=schemas.Review, tags=["Reviews"])
 async def update_review(
     id: int,
     review: schemas.ReviewCreate,
@@ -287,7 +291,7 @@ async def update_review(
     logging.info(f"Review {id} updated by {current_user.email}")
     return updated_review
 
-@app.delete("/api/reviews/{id}")
+@app.delete("/api/reviews/{id}", tags=["Reviews"])
 async def delete_review(
     id: int,
     db: Session = Depends(get_db),
@@ -305,7 +309,7 @@ async def delete_review(
     logging.info(f"Review {id} deleted by {current_user.email}")
     return {"message": "Review deleted"}
 
-@app.post("/api/reviews/{id}/moderate")
+@app.post("/api/reviews/{id}/moderate", tags=["Reviews"])
 async def moderate_review(
     id: int,
     moderation: schemas.ReviewModeration,

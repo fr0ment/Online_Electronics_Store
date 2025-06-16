@@ -15,12 +15,17 @@ def get_password_hash(password):
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
-def get_products(db: Session, page: int, limit: int, category: Optional[str], min_price: Optional[float]):
+def get_products(db: Session, page: int, limit: int, category: Optional[str], min_price: Optional[float], max_price: Optional[float], sort_by: Optional[str], sort_order: Optional[str]):
     query = db.query(models.Product)
     if category:
         query = query.filter(models.Product.category == category)
     if min_price is not None:
         query = query.filter(models.Product.price >= min_price)
+    if max_price is not None:
+        query = query.filter(models.Product.price <= max_price)
+    if sort_by in ["name", "price"]:
+        order_column = getattr(models.Product, sort_by)
+        query = query.order_by(order_column.asc() if sort_order == "asc" else order_column.desc())
     return query.offset((page - 1) * limit).limit(limit).all()
 
 def get_product(db: Session, product_id: int):
