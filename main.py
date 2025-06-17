@@ -216,20 +216,19 @@ async def update_order(
     logging.info(f"Order {id} updated by {current_user.email}")
     return updated_order
 
-@app.delete("/api/orders/{id}", tags=["Заказы"])
+@app.delete("/api/orders/{order_id}", tags=["Заказы"])
 async def delete_order(
-    id: int,
+    order_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
-        logging.warning(f"Unauthorized order deletion attempt by {current_user.email}")
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    if not crud.delete_order(db, id):
-        logging.warning(f"Order {id} not found for deletion")
+    order = crud.get_order(db, order_id)
+    if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    logging.info(f"Order {id} deleted by {current_user.email}")
+    if current_user.role != "admin" and (current_user.role != "customer" or order.user_id != current_user.id):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    order = crud.delete_order(db, order_id)
+    logging.info(f"Deleted order {order_id} by {current_user.email}")
     return {"message": "Order deleted"}
 
 # Эндпоинты для отзывов

@@ -37,14 +37,21 @@ class Product(ProductBase):
 
 class OrderBase(BaseModel):
     status: str = Field(..., min_length=1)
-    total: float = Field(..., gt=0)
+    total: float = Field(..., ge=0)
+    class Config:
+        schema_extra = {
+            "example": {
+                "status": "pending",
+                "total": 0.0
+            }
+        }
 
 class OrderCreate(OrderBase):
     pass
 
 class OrderUpdate(BaseModel):
     status: Optional[str] = Field(None, min_length=1)
-    total: Optional[float] = Field(None, gt=0)
+    total: Optional[float] = Field(None, ge=0)
     
 class Order(OrderBase):
     id: int
