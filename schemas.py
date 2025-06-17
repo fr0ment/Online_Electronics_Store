@@ -57,7 +57,7 @@ class Order(OrderBase):
 class ReviewBase(BaseModel):
     product_id: int
     rating: int = Field(..., ge=1, le=5)
-    text: Optional[str] = None
+    text: Optional[str] = Field(None, min_length=10, max_length=1000)
 
 class ReviewCreate(ReviewBase):
     pass
@@ -72,3 +72,17 @@ class Review(ReviewBase):
 
 class ReviewModeration(BaseModel):
     is_approved: bool
+
+class OrderItemBase(BaseModel):
+    product_id: int
+    quantity: int = Field(..., gt=0)
+
+class OrderItemCreate(OrderItemBase):
+    pass
+
+class OrderItem(OrderItemBase):
+    id: int
+    order_id: int
+
+    class Config:
+        from_attributes = True

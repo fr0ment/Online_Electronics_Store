@@ -9,7 +9,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, nullable=False)  # customer, manager, admin
+    role = Column(String, nullable=False)
 
 class Product(Base):
     __tablename__ = "products"
@@ -20,8 +20,9 @@ class Product(Base):
     category = Column(String, nullable=False)
     description = Column(String)
     stock = Column(Integer, nullable=False)
-
+    average_rating = Column(Float, nullable=True)
     reviews = relationship("Review", back_populates="product")
+    
 
 class Order(Base):
     __tablename__ = "orders"
@@ -33,7 +34,7 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
-
+    items = relationship("OrderItem", back_populates="order")
 class Review(Base):
     __tablename__ = "reviews"
     
@@ -46,3 +47,14 @@ class Review(Base):
 
     product = relationship("Product", back_populates="reviews")
     user = relationship("User")
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")
