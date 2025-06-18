@@ -2,3 +2,6 @@ __pycache__
 *.pyc
 *.db
 app.log
+.env
+venv/
+.venv/
